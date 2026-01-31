@@ -1,16 +1,12 @@
 # Bevy New 2D
 
 This template is a great way to get started on a new 2D [Bevy](https://bevyengine.org/) game!
-Start with a [basic project structure](#write-your-game) and [CI / CD](#release-your-game) that can deploy to [itch.io](https://itch.io).
-You can [try this template in your web browser!](https://the-bevy-flock.itch.io/bevy-new-2d)
-
-[@ChristopherBiscardi](https://github.com/ChristopherBiscardi) made a video on how to use this template from start to finish:
-
-[<img src="./docs/img/thumbnail.png" width=40% height=40% alt="A video tutorial for bevy_new_2d, formerly known as bevy_quickstart"/>](https://www.youtube.com/watch?v=ESBRyXClaYc)
+Start with a [basic project](#write-your-game) and [CI / CD](#release-your-game) that can deploy to [itch.io](https://itch.io).
+You can [try this template in your browser!](https://the-bevy-flock.itch.io/bevy-new-2d)
 
 ## Prerequisites
 
-We assume that you know how to use Bevy already and have seen the [official Quick Start Guide](https://bevyengine.org/learn/quick-start/introduction/).
+We assume that you're familiar with Bevy and have already seen the [official Quick Start Guide](https://bevyengine.org/learn/quick-start/introduction/).
 
 If you're new to Bevy, the patterns used in this template may look a bit weird at first glance.
 See our [Design Document](./docs/design.md) for more information on how we structured the code and why.
@@ -27,18 +23,19 @@ Then [create a GitHub repository](https://github.com/new) and push your local re
 
 ## Write your game
 
-The best way to get started is to play around with what you find in [`src/demo/`](./src/demo).
+The best way to get started is to play around with the code you find in [`src/demo/`](./src/demo).
 
 This template comes with a basic project structure that you may find useful:
 
 | Path                                               | Description                                                        |
 | -------------------------------------------------- | ------------------------------------------------------------------ |
-| [`src/lib.rs`](./src/lib.rs)                       | App setup                                                          |
+| [`src/main.rs`](./src/main.rs)                     | App setup                                                          |
 | [`src/asset_tracking.rs`](./src/asset_tracking.rs) | A high-level way to load collections of asset handles as resources |
 | [`src/audio.rs`](./src/audio.rs)                   | Marker components for sound effects and music                      |
-| [`src/demo/`](./src/demo)                          | Example game mechanics & content (replace with your own code)      |
 | [`src/dev_tools.rs`](./src/dev_tools.rs)           | Dev tools for dev builds (press \` aka backtick to toggle)         |
-| [`src/screens/`](./src/screens)                    | Splash screen, title screen, gameplay screen, etc.                 |
+| [`src/demo/`](./src/demo)                          | Example game mechanics & content (replace with your own code)      |
+| [`src/menus/`](./src/menus)                        | Main menu, pause menu, settings menu, etc.                         |
+| [`src/screens/`](./src/screens)                    | Splash screen, title screen, loading screen, etc.                  |
 | [`src/theme/`](./src/theme)                        | Reusable UI widgets & theming                                      |
 
 Feel free to move things around however you want, though.
@@ -48,38 +45,54 @@ Feel free to move things around however you want, though.
 
 ## Run your game
 
-We recommend running your game with the [Bevy CLI](https://github.com/TheBevyFlock/bevy_cli).
+We recommend using the [Bevy CLI](https://github.com/TheBevyFlock/bevy_cli) to run your game.
 
 Running your game locally is very simple:
 
 - Use `bevy run` to run a native dev build.
 - Use `bevy run web` to run a web dev build.
 
-If you're using [VS Code](https://code.visualstudio.com/), this template comes with a [`.vscode/tasks.json`](./.vscode/tasks.json) file.
+This template also comes with [VS Code tasks](./.vscode/tasks.json) and [JetBrains run configurations](./.idea/runConfigurations/)
+to help run your game from your IDE.
 
 <details>
-  <summary>Run release builds</summary>
+  <summary><ins>Running release builds</ins></summary>
 
-- Use `bevy run --release` to run a native release build.
-- Use `bevy run --release web` to run a web release build.
-
+  - Use `bevy run --release` to run a native release build.
+  - Use `bevy run --release web` to run a web release build.
 </details>
 
 <details>
-  <summary>Linux dependencies</summary>
+  <summary><ins>Installing Linux dependencies</ins></summary>
 
-If you are using Linux, make sure you take a look at Bevy's [Linux dependencies](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md).
-Note that this template enables Wayland support, which requires additional dependencies as detailed in the link above.
-Wayland is activated by using the `bevy/wayland` feature in the [`Cargo.toml`](./Cargo.toml).
-
+  If you're using Linux, make sure you've installed Bevy's [Linux dependencies](https://github.com/bevyengine/bevy/blob/main/docs/linux_dependencies.md).
+  Note that this template enables Wayland support, which requires additional dependencies as detailed in the link above.
+  Wayland is activated by using the `bevy/wayland` feature in the [`Cargo.toml`](./Cargo.toml).
 </details>
 
 <details>
-    <summary>(Optional) Improve your compile times</summary>
+  <summary><ins>(Optional) Improving compile times</ins></summary>
 
-[`.cargo/config_fast_builds.toml`](./.cargo/config_fast_builds.toml) contains documentation on how to set up your environment to improve compile times.
-After you've fiddled with it, rename it to `.cargo/config.toml` to enable it.
+  [`.cargo/config_fast_builds.toml`](./.cargo/config_fast_builds.toml) contains documentation on how to set up your environment to improve compile times.
+  After you've fiddled with it, rename it to `.cargo/config.toml` to enable it.
+</details>
 
+<details>
+  <summary><ins>(Optional) Hot-patching with <code>subsecond</code></ins></summary>
+
+  Hot-patching is an experimental feature that allows you to edit your game's code _while it's running_
+  and see the changes without having to recompile or restart.
+
+  To set this up, follow the instructions in the [release announcement](https://bevy.org/news/bevy-0-17/#hot-patching-systems-in-a-running-app).
+
+  Run your game with hot-patching enabled:
+
+  ```shell
+  BEVY_ASSET_ROOT='.' dx serve --hot-patch --features "bevy/hotpatching"
+  ```
+
+  Now edit a system's code while the game is running, and save the file.
+  You should see `Status: Hot-patching...` in the CLI if you've got it working.
 </details>
 
 ## Release your game
@@ -89,8 +102,8 @@ See [Workflows](./docs/workflows.md) for more information.
 
 ## Known Issues
 
-There are some known issues in Bevy that require some arcane workarounds.
-To keep this template simple, we have opted not to include those workarounds.
+There are some known issues in Bevy that can require arcane workarounds.
+To keep this template simple, we've opted to leave these workarounds out.
 You can read about them in the [Known Issues](./docs/known-issues.md) document.
 
 ## License
@@ -105,4 +118,4 @@ The CC0 license explicitly does not waive patent rights, but we confirm that we 
 
 ## Credits
 
-The [assets](./assets) in this repository are all 3rd-party. See the [credits screen](./src/screens/credits.rs) for more information.
+The [assets](./assets) in this repository are all 3rd-party. See the [credits menu](./src/menus/credits.rs) for more information.

@@ -2,66 +2,60 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
-use crate::{
-    asset_tracking::LoadResource, audio::Music, demo::level::spawn_level as spawn_level_command,
-    screens::Screen,
-};
+use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
-    app.register_type::<GameplayMusic>();
-    app.load_resource::<GameplayMusic>();
-    app.add_systems(OnEnter(Screen::Gameplay), start_gameplay_music);
-    app.add_systems(OnExit(Screen::Gameplay), stop_gameplay_music);
-
+    // Toggle pause on key press.
     app.add_systems(
         Update,
-        return_to_title_screen
-            .run_if(in_state(Screen::Gameplay).and(input_just_pressed(KeyCode::Escape))),
+        (
+            (pause, spawn_pause_overlay, open_pause_menu).run_if(
+                in_state(Screen::Gameplay)
+                    .and(in_state(Menu::None))
+                    .and(input_just_pressed(KeyCode::KeyP).or(input_just_pressed(KeyCode::Escape))),
+            ),
+            close_menu.run_if(
+                in_state(Screen::Gameplay)
+                    .and(not(in_state(Menu::None)))
+                    .and(input_just_pressed(KeyCode::KeyP)),
+            ),
+        ),
+    );
+    app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
+    app.add_systems(
+        OnEnter(Menu::None),
+        unpause.run_if(in_state(Screen::Gameplay)),
     );
 }
 
-fn spawn_level(mut commands: Commands) {
-    commands.queue(spawn_level_command);
+fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
+    next_pause.set(Pause(false));
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-struct GameplayMusic {
-    #[dependency]
-    music: Handle<AudioSource>,
-    entity: Option<Entity>,
+fn pause(mut next_pause: ResMut<NextState<Pause>>) {
+    next_pause.set(Pause(true));
 }
 
-impl FromWorld for GameplayMusic {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
-            entity: None,
-        }
-    }
+fn spawn_pause_overlay(mut commands: Commands) {
+    commands.spawn((
+        Name::new("Pause Overlay"),
+        Node {
+            width: percent(100),
+            height: percent(100),
+            ..default()
+        },
+        GlobalZIndex(1),
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
+        DespawnOnExit(Pause(true)),
+    ));
 }
 
-fn start_gameplay_music(mut commands: Commands, mut music: ResMut<GameplayMusic>) {
-    music.entity = Some(
-        commands
-            .spawn((
-                AudioPlayer(music.music.clone()),
-                PlaybackSettings::LOOP,
-                Music,
-            ))
-            .id(),
-    );
+fn open_pause_menu(mut next_menu: ResMut<NextState<Menu>>) {
+    next_menu.set(Menu::Pause);
 }
 
-fn stop_gameplay_music(mut commands: Commands, mut music: ResMut<GameplayMusic>) {
-    if let Some(entity) = music.entity.take() {
-        commands.entity(entity).despawn();
-    }
-}
-
-fn return_to_title_screen(mut next_screen: ResMut<NextState<Screen>>) {
-    next_screen.set(Screen::Title);
+fn close_menu(mut next_menu: ResMut<NextState<Menu>>) {
+    next_menu.set(Menu::None);
 }

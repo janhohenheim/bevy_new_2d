@@ -2,32 +2,38 @@
 
 This template uses [GitHub workflows](https://docs.github.com/en/actions/using-workflows) for [CI / CD](https://www.redhat.com/en/topics/devops/what-is-ci-cd), defined in [`.github/workflows/`](../.github/workflows).
 
+> [!WARNING]
+> GitHub puts a limit on free CI usage for [private repositories](https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for--private-repositories), so tune your workflows accordingly!
+
 ## CI (testing)
 
-The [CI workflow](.github/workflows/ci.yaml) will trigger on every commit or PR to `main`, and do the following:
+The [CI workflow](.github/workflows/ci.yaml) will trigger on every commit or PR to `main`, and it will:
 
-- Run tests.
-- Run Clippy lints.
 - Check formatting.
 - Check documentation.
+- Run Clippy lints.
+- Run [Bevy lints](https://thebevyflock.github.io/bevy_cli/bevy_lint/).
+- Run tests.
+- Check that the web build compiles.
 
 > [!TIP]
 > <details>
->   <summary>You may want to set up a <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets">GitHub ruleset</a> to require that all commits to <code>main</code> pass CI.</summary>
+>   <summary>Consider setting up a <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets">GitHub ruleset</a> to require that all commits to <code>main</code> pass CI.</summary>
 >
 >   <img src="img/workflow-ruleset.png" alt="A screenshot showing a GitHub ruleset with status checks enabled" width="100%">
 > </details>
 
 ## CD (releasing)
 
-The [CD workflow](../.github/workflows/release.yaml) will trigger on every pushed tag in the format `v1.2.3`, and do the following:
+The [CD workflow](../.github/workflows/release.yaml) will trigger on manual workflow dispatch, and it will:
 
-- Create a release build for Windows, macOS, Linux, and web.
+- (Optional) Create a release build for Windows, macOS, Linux, and web.
 - (Optional) Upload to [GitHub releases](https://docs.github.com/en/repositories/releasing-projects-on-github).
-- (Optional) Upload to [itch.io](https://itch.io).
+- (Optional) Deploy to [itch.io](https://itch.io).
+- (Optional) Deploy to [GitHub Pages](https://docs.github.com/en/pages).
 
 <details>
-  <summary>This workflow can also be triggered manually.</summary>
+  <summary><ins>Triggering a release</ins></summary>
 
   In your GitHub repository, navigate to `Actions > Release > Run workflow`:
 
@@ -37,14 +43,14 @@ The [CD workflow](../.github/workflows/release.yaml) will trigger on every pushe
 </details>
 
 > [!IMPORTANT]
-> Using this workflow requires some setup. We will go through this now.
+> Using this workflow requires some setup. We'll go through this now.
 
 ### Configure environment variables
 
 The release workflow can be configured by tweaking the environment variables in [`.github/workflows/release.yaml`](../.github/workflows/release.yaml).
 
 <details>
-  <summary>Click here for a list of variables and how they're used.</summary>
+  <summary><ins>List of environment variables and how they're used</ins></summary>
 
   ```yaml
   # The base filename of the binary produced by `cargo build`.
@@ -53,26 +59,13 @@ The release workflow can be configured by tweaking the environment variables in 
   # The path to the assets directory.
   assets_path: assets
 
-  # Whether to build and package a release for a given target platform.
-  build_for_web: true
-  build_for_linux: true
-  build_for_windows: true
-  build_for_macos: true
-
-  # Whether to upload the packages produced by this workflow to a GitHub release.
-  upload_to_github: true
-
-  # The itch.io project to upload to in the format `user-name/project-name`.
-  # There will be no upload to itch.io if this is commented out.
-  upload_to_itch: the-bevy-flock/bevy-new-2d
-
-  ############
-  # ADVANCED #
-  ############
+  # The itch.io project to deploy to in the format `user-name/project-name`.
+  # There will be no deployment to itch.io if this is commented out.
+  itch_page: the-bevy-flock/bevy-new-2d
 
   # The ID of the app produced by this workflow.
   # Applies to macOS releases.
-  # Must contain only A-Z, a-z, 0-9, hyphens, and periods: https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleidentifier
+  # Must contain only A-Z, a-z, 0-9, hyphen, and period: <https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleidentifier>.
   app_id: the-bevy-flock.bevy-new-2d
 
   # The base filename of the binary in the package produced by this workflow.
@@ -82,7 +75,7 @@ The release workflow can be configured by tweaking the environment variables in 
 
   # The name of the `.zip` or `.dmg` file produced by this workflow.
   # Defaults to `app_binary_name` if commented out.
-  app_package_name: bevy_new_2d
+  app_package_name: bevy-new-2d
 
   # The display name of the app produced by this workflow.
   # Applies to macOS releases.
@@ -91,26 +84,23 @@ The release workflow can be configured by tweaking the environment variables in 
 
   # The short display name of the app produced by this workflow.
   # Applies to macOS releases.
-  # Must be 15 or fewer characters: https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundlename
+  # Must be 15 or fewer characters: <https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundlename>.
   # Defaults to `app_display_name` if commented out.
   app_short_name: Bevy New 2D
 
   # Before enabling LFS, please take a look at GitHub's documentation for costs and quota limits:
-  # https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage
+  # <https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage>
   git_lfs: false
 
-  # Enabling this only helps with consecutive releases to the same tag (and takes up cache storage space).
-  # See: https://github.com/orgs/community/discussions/27059
+  # Enabling this only helps with consecutive releases to the same version (and takes up cache storage space).
+  # See: <https://github.com/orgs/community/discussions/27059>.
   use_github_cache: false
   ```
 </details>
 
 The initial values are set automatically by `bevy new`, but you can edit them yourself and push a commit.
 
-> [!WARNING]
-> GitHub puts a limit on free CI usage for [private repositories](https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for--private-repositories), so tune your workflows accordingly!
-
-### Set up itch.io upload
+### Set up itch.io deployment
 
 #### Add butler credentials
 
@@ -127,11 +117,35 @@ Hit `New repository secret` and enter the following values, then hit `Add secret
 
 #### Create itch.io project
 
-Create a new itch.io project with the same user and project name as in the `upload_to_itch` variable in [`.github/workflows/release.yaml`](../.github/workflows/release.yaml).
+Create a new itch.io project with the same user and project name as in the `itch_page` variable in [`.github/workflows/release.yaml`](../.github/workflows/release.yaml).
 Hit `Save & view page` at the bottom of the page.
 
-[Trigger the release workflow](#cd-releasing) for the first time. Once it's done, go back to itch.io and hit `Edit game` in the top left.
+Trigger the [release workflow](#cd-releasing) for the first time. Once it's done, go back to itch.io and hit `Edit game` in the top left.
 
-Set `Kind of project` to `HTML`, then find the newly uploaded `web` build and tick the box that says "This file will be played in the browser".
+Set `Kind of project` to `HTML`, then find the newly uploaded `web` build and tick the box that says `This file will be played in the browser`.
 
-![A screenshot showing a web build selected in the itch.io uploads](img/workflow-itch-release.png)
+![A screenshot showing a web build selected in the itch.io uploads](./img/workflow-itch-release.png)
+
+### Set up GitHub Pages deployment
+
+#### Enable deployment via GitHub Actions
+
+<details>
+  <summary>In your GitHub repository, navigate to <code>Settings > Pages > Build and Deployment</code>.</summary>
+
+  ![A screenshot showing where to enable Pages deployment via GitHub Actions](./img/enable_github_pages.png)
+</details>
+
+Hit the drop-down under `Source` and choose `Github Actions` as the source of your Pages deployment.
+
+#### Add your branch to the `github-pages` environment
+
+If you want to deploy to GitHub Pages from a branch other than `main`, you'll have to add that branch to the `github-pages` environment.
+
+<details>
+  <summary>In your GitHub repository, navigate to <code>Settings > Environments > github-pages > Deployment branches</code>.</summary>
+
+  ![A screenshot showing where to add a branch to the github-pages environment](./img/add_branch_to_github_pages_environment.png)
+</details>
+
+Hit `Add deployment branch rule`, type in the name of the branch you want to deploy to Pages, and hit `Add rule`.

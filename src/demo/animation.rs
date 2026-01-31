@@ -9,28 +9,34 @@ use rand::prelude::*;
 use std::time::Duration;
 
 use crate::{
-    AppSet,
-    audio::SoundEffect,
+    AppSystems, PausableSystems,
+    audio::sound_effect,
     demo::{movement::MovementController, player::PlayerAssets},
 };
 
 pub(super) fn plugin(app: &mut App) {
     // Animate and play sound effects based on controls.
-    app.register_type::<PlayerAnimation>();
     app.add_systems(
         Update,
         (
-            update_animation_timer.in_set(AppSet::TickTimers),
+            update_animation_timer.in_set(AppSystems::TickTimers),
             (
                 update_animation_movement,
                 update_animation_atlas,
                 trigger_step_sound_effect,
             )
                 .chain()
-                .run_if(resource_exists::<PlayerAssets>)
-                .in_set(AppSet::Update),
-        ),
+                .in_set(AppSystems::Update),
+        )
+            .in_set(PausableSystems),
     );
+}
+
+/// Update the animation timer.
+fn update_animation_timer(time: Res<Time>, mut query: Query<&mut PlayerAnimation>) {
+    for mut animation in &mut query {
+        animation.update_timer(time.delta());
+    }
 }
 
 /// Update the sprite direction and animation state (idling/walking).
@@ -52,13 +58,6 @@ fn update_animation_movement(
     }
 }
 
-/// Update the animation timer.
-fn update_animation_timer(time: Res<Time>, mut query: Query<&mut PlayerAnimation>) {
-    for mut animation in &mut query {
-        animation.update_timer(time.delta());
-    }
-}
-
 /// Update the texture atlas to reflect changes in the animation.
 fn update_animation_atlas(mut query: Query<(&PlayerAnimation, &mut Sprite)>) {
     for (animation, mut sprite) in &mut query {
@@ -75,7 +74,7 @@ fn update_animation_atlas(mut query: Query<(&PlayerAnimation, &mut Sprite)>) {
 /// animation.
 fn trigger_step_sound_effect(
     mut commands: Commands,
-    player_assets: Res<PlayerAssets>,
+    player_assets: If<Res<PlayerAssets>>,
     mut step_query: Query<&PlayerAnimation>,
 ) {
     for animation in &mut step_query {
@@ -83,13 +82,9 @@ fn trigger_step_sound_effect(
             && animation.changed()
             && (animation.frame == 2 || animation.frame == 5)
         {
-            let rng = &mut rand::thread_rng();
-            let random_step = player_assets.steps.choose(rng).unwrap();
-            commands.spawn((
-                AudioPlayer(random_step.clone()),
-                PlaybackSettings::DESPAWN,
-                SoundEffect,
-            ));
+            let rng = &mut rand::rng();
+            let random_step = player_assets.steps.choose(rng).unwrap().clone();
+            commands.spawn(sound_effect(random_step));
         }
     }
 }
@@ -143,7 +138,7 @@ impl PlayerAnimation {
     /// Update animation timers.
     pub fn update_timer(&mut self, delta: Duration) {
         self.timer.tick(delta);
-        if !self.timer.finished() {
+        if !self.timer.is_finished() {
             return;
         }
         self.frame = (self.frame + 1)
@@ -165,7 +160,7 @@ impl PlayerAnimation {
 
     /// Whether animation changed this tick.
     pub fn changed(&self) -> bool {
-        self.timer.finished()
+        self.timer.is_finished()
     }
 
     /// Return sprite index in the atlas.

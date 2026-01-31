@@ -1,37 +1,44 @@
 use bevy::prelude::*;
 
-/// An organizational marker component that should be added to a spawned [`AudioPlayer`] if it is in the
-/// general "music" category (ex: global background music, soundtrack, etc).
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        apply_global_volume.run_if(resource_changed::<GlobalVolume>),
+    );
+}
+
+/// An organizational marker component that should be added to a spawned [`AudioPlayer`] if it's in the
+/// general "music" category (e.g. global background music, soundtrack).
 ///
-/// This can then be used to query for and operate on sounds in that category. For example:
-///
-/// ```
-/// use bevy::{audio::Volume, prelude::*};
-/// use bevy_new_2d::audio::Music;
-///
-/// fn set_music_volume(mut sink_query: Query<&mut AudioSink, With<Music>>) {
-///     for mut sink in &mut sink_query {
-///         sink.set_volume(Volume::Linear(0.5));
-///     }
-/// }
-/// ```
-#[derive(Component, Default)]
+/// This can then be used to query for and operate on sounds in that category.
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct Music;
 
-/// An organizational marker component that should be added to a spawned [`AudioPlayer`] if it is in the
-/// general "sound effect" category (ex: footsteps, the sound of a magic spell, a door opening).
+/// A music audio instance.
+pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
+    (AudioPlayer(handle), PlaybackSettings::LOOP, Music)
+}
+
+/// An organizational marker component that should be added to a spawned [`AudioPlayer`] if it's in the
+/// general "sound effect" category (e.g. footsteps, the sound of a magic spell, a door opening).
 ///
-/// This can then be used to query for and operate on sounds in that category. For example:
-///
-/// ```
-/// use bevy::{audio::Volume, prelude::*};
-/// use bevy_new_2d::audio::SoundEffect;
-///
-/// fn set_sound_effect_volume(mut sink_query: Query<&mut AudioSink, With<SoundEffect>>) {
-///     for mut sink in &mut sink_query {
-///         sink.set_volume(Volume::Linear(0.5));
-///     }
-/// }
-/// ```
-#[derive(Component, Default)]
+/// This can then be used to query for and operate on sounds in that category.
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct SoundEffect;
+
+/// A sound effect audio instance.
+pub fn sound_effect(handle: Handle<AudioSource>) -> impl Bundle {
+    (AudioPlayer(handle), PlaybackSettings::DESPAWN, SoundEffect)
+}
+
+/// [`GlobalVolume`] doesn't apply to already-running audio entities, so this system will update them.
+fn apply_global_volume(
+    global_volume: Res<GlobalVolume>,
+    mut audio_query: Query<(&PlaybackSettings, &mut AudioSink)>,
+) {
+    for (playback, mut sink) in &mut audio_query {
+        sink.set_volume(global_volume.volume * playback.volume);
+    }
+}

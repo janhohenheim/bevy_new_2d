@@ -5,29 +5,29 @@ edition = "2024"
 license = "MIT OR Apache-2.0 OR CC0-1.0"
 
 [dependencies]
-bevy = { version = "0.16.0-rc.1", features = ["wayland"] }
-rand = "0.8"
-# Compile low-severity logs out of native builds for performance.
-log = { version = "0.4", features = [
-    "max_level_debug",
-    "release_max_level_warn",
-] }
-# Compile low-severity logs out of web builds for performance.
+bevy = { version = "0.18" }
+rand = "0.9"
+# Compile out low-severity logs to improve performance.
+# Remove these features if you want to profile your game with tracy.
+# (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
 tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
 
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
 [features]
-default = [
-    # Default to a native dev build.
-    "dev_native",
-]
+# Default to a native dev build.
+default = ["dev_native"]
 dev = [
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
     "bevy/dynamic_linking",
     "bevy/bevy_dev_tools",
     "bevy/bevy_ui_debug",
+    # Improve error messages coming from Bevy
+    "bevy/track_location",
 ]
 dev_native = [
     "dev",
@@ -39,14 +39,20 @@ dev_native = [
 
 
 [package.metadata.bevy_cli.release]
-# Disable debug functionality in release builds
-default_features = false
+# Disable dev features for release builds.
+default-features = false
+
+[package.metadata.bevy_cli.web]
+# Disable native features for web builds.
+default-features = false
 
 [package.metadata.bevy_cli.web.dev]
-# Disable native-only debug functionality in web builds
-default_features = false
 features = ["dev"]
 
+
+[lints.rust]
+# Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(bevy_lint)"] }
 
 [lints.clippy]
 # Bevy supplies arguments to systems via dependency injection, so it's natural for systems to
@@ -57,9 +63,15 @@ type_complexity = "allow"
 # Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
 nonstandard_macro_braces = "warn"
 
+# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
+# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
+[package.metadata.bevy_lint]
+# panicking_methods = "deny"
+# pedantic = "warn"
+
 
 # Compile with Performance Optimizations:
-# https://bevyengine.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
+# <https://bevyengine.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations>
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -81,7 +93,7 @@ codegen-units = 1
 # Slows compile times, marginal improvements.
 lto = "thin"
 
-# This profile will be used for `bevy run web` automatically
+# This profile will be used by `bevy run web` automatically.
 [profile.web-release]
 # Default to release profile values.
 inherits = "release"
@@ -90,3 +102,13 @@ inherits = "release"
 opt-level = "s"
 # Strip all debugging information from the binary to slightly reduce file size.
 strip = "debuginfo"
+
+# Optimize for build time in CI.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+codegen-units = 4
+
+[profile.ci.package."*"]
+opt-level = 0

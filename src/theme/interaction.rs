@@ -1,18 +1,15 @@
 use bevy::prelude::*;
 
-use crate::{asset_tracking::LoadResource, audio::SoundEffect};
+use crate::{asset_tracking::LoadResource, audio::sound_effect};
 
 pub(super) fn plugin(app: &mut App) {
-    app.register_type::<InteractionPalette>();
-    app.register_type::<InteractionAssets>();
+    app.add_observer(apply_interaction_palette_on_click);
+    app.add_observer(apply_interaction_palette_on_over);
+    app.add_observer(apply_interaction_palette_on_out);
+
     app.load_resource::<InteractionAssets>();
-    app.add_systems(
-        Update,
-        (
-            apply_interaction_palette,
-            trigger_interaction_sound_effect.run_if(resource_exists::<InteractionAssets>),
-        ),
-    );
+    app.add_observer(play_sound_effect_on_click);
+    app.add_observer(play_sound_effect_on_over);
 }
 
 /// Palette for widget interactions. Add this to an entity that supports
@@ -26,20 +23,37 @@ pub struct InteractionPalette {
     pub pressed: Color,
 }
 
-fn apply_interaction_palette(
-    mut palette_query: Query<
-        (&Interaction, &InteractionPalette, &mut BackgroundColor),
-        Changed<Interaction>,
-    >,
+fn apply_interaction_palette_on_click(
+    click: On<Pointer<Click>>,
+    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
 ) {
-    for (interaction, palette, mut background) in &mut palette_query {
-        *background = match interaction {
-            Interaction::None => palette.none,
-            Interaction::Hovered => palette.hovered,
-            Interaction::Pressed => palette.pressed,
-        }
-        .into();
-    }
+    let Ok((palette, mut bg)) = palette_query.get_mut(click.event_target()) else {
+        return;
+    };
+
+    *bg = palette.pressed.into();
+}
+
+fn apply_interaction_palette_on_over(
+    over: On<Pointer<Over>>,
+    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
+) {
+    let Ok((palette, mut bg)) = palette_query.get_mut(over.event_target()) else {
+        return;
+    };
+
+    *bg = palette.hovered.into();
+}
+
+fn apply_interaction_palette_on_out(
+    out: On<Pointer<Out>>,
+    mut palette_query: Query<(&InteractionPalette, &mut BackgroundColor)>,
+) {
+    let Ok((palette, mut bg)) = palette_query.get_mut(out.event_target()) else {
+        return;
+    };
+
+    *bg = palette.none.into();
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -48,7 +62,7 @@ struct InteractionAssets {
     #[dependency]
     hover: Handle<AudioSource>,
     #[dependency]
-    press: Handle<AudioSource>,
+    click: Handle<AudioSource>,
 }
 
 impl FromWorld for InteractionAssets {
@@ -56,22 +70,23 @@ impl FromWorld for InteractionAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             hover: assets.load("audio/sound_effects/button_hover.ogg"),
-            press: assets.load("audio/sound_effects/button_press.ogg"),
+            click: assets.load("audio/sound_effects/button_click.ogg"),
         }
     }
 }
 
-fn trigger_interaction_sound_effect(
-    interaction_query: Query<&Interaction, Changed<Interaction>>,
-    interaction_assets: Res<InteractionAssets>,
+fn play_sound_effect_on_click(
+    _: On<Pointer<Click>>,
+    interaction_assets: If<Res<InteractionAssets>>,
     mut commands: Commands,
 ) {
-    for interaction in &interaction_query {
-        let source = match interaction {
-            Interaction::Hovered => interaction_assets.hover.clone(),
-            Interaction::Pressed => interaction_assets.press.clone(),
-            _ => continue,
-        };
-        commands.spawn((AudioPlayer(source), PlaybackSettings::DESPAWN, SoundEffect));
-    }
+    commands.spawn(sound_effect(interaction_assets.click.clone()));
+}
+
+fn play_sound_effect_on_over(
+    _: On<Pointer<Over>>,
+    interaction_assets: If<Res<InteractionAssets>>,
+    mut commands: Commands,
+) {
+    commands.spawn(sound_effect(interaction_assets.hover.clone()));
 }
