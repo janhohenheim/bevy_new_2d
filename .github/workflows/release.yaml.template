@@ -64,10 +64,10 @@ env:
   {%- if itch_project != "" %}
   itch_page: {{itch_username}}/{{itch_project}}
   {%- else %}
-  itch_page: {{itch_username}}/{{project-name | kebab_case}}}
+  itch_page: {{itch_username}}/{{project-name | kebab_case}}
   {%- endif %}
   {%- else %}
-  #itch_page: your-itch-username/{{project-name | kebab_case}}}
+  #itch_page: your-itch-username/{{project-name | kebab_case}}
   {%- endif %}
 
   # The ID of the app produced by this workflow.
