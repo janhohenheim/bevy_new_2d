@@ -32,6 +32,8 @@ The [CD workflow](../.github/workflows/release.yaml) will trigger on manual work
 - (Optional) Deploy to [itch.io](https://itch.io).
 - (Optional) Deploy to [GitHub Pages](https://docs.github.com/en/pages).
 
+If you have the `continuous_deployment_to_itch` env var enabled, it will also deploy the newest version of the app on every push to `main` to itch.io if the itch page is set up.
+
 <details>
   <summary><ins>Triggering a release</ins></summary>
 
@@ -94,7 +96,12 @@ The release workflow can be configured by tweaking the environment variables in 
 
   # Enabling this only helps with consecutive releases to the same version (and takes up cache storage space).
   # See: <https://github.com/orgs/community/discussions/27059>.
-  use_github_cache: false
+  # This is most useful in combination with `continuous_deployment_to_itch`
+  use_github_cache: true
+
+  # Whether to deploy the newest version of the app on every push to `main` to itch.io. Requires `itch_page` to be set.
+  # Will ignore warnings.
+  continuous_deployment_to_itch: true
   ```
 </details>
 
