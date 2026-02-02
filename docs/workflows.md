@@ -94,14 +94,11 @@ The release workflow can be configured by tweaking the environment variables in 
   # <https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage>
   git_lfs: false
 
-  # Enabling this only helps with consecutive releases to the same version (and takes up cache storage space).
-  # See: <https://github.com/orgs/community/discussions/27059>.
-  # This is most useful in combination with `continuous_deployment_to_itch`
-  use_github_cache: true
-
-  # Whether to deploy the newest version of the app on every push to `main` to itch.io. Requires `itch_page` to be set.
+  # Whether to deploy the newest version of the app on every push to `main` to web targets.
+  # Will upload to GitHub pages and, if `itch_page` is set, to itch.io.
   # Will ignore warnings.
-  continuous_deployment_to_itch: true
+  # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
+  continuous_deployment_to_web: false
   ```
 </details>
 
