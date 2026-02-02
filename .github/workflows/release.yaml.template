@@ -226,7 +226,7 @@ jobs:
           targets: ${{ matrix.targets }}
 
       - name: Restore Rust cache
-        if: ${{ env.is_platform_enabled == 'true' && env.continuous_deployment_to_web == 'true' }}
+        if: ${{ env.is_platform_enabled == 'true' && needs.forward-env.outputs.continuous_deployment_to_web == 'true' }}
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: release
@@ -333,7 +333,7 @@ jobs:
           retention-days: 1
 
       - name: Upload web bundle to workflow artifacts for GitHub Pages (Web)
-        if: ${{ env.is_platform_enabled == 'true' && matrix.platform == 'web' && (inputs.deploy_to_github_pages == 'true' || (github.event_name == 'push' && env.continuous_deployment_to_web == 'true')) }}
+        if: ${{ env.is_platform_enabled == 'true' && matrix.platform == 'web' && (inputs.deploy_to_github_pages == 'true' || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_web == 'true')) }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ env.app }}/${{ env.cargo_build_binary_name }}
