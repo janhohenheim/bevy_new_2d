@@ -93,12 +93,16 @@ The release workflow can be configured by tweaking the environment variables in 
   # Before enabling LFS, please take a look at GitHub's documentation for costs and quota limits:
   # <https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage>
   git_lfs: false
-
-  # Whether to deploy the newest version of the app on every push to `main` to web targets.
-  # Will upload to GitHub pages and, if `itch_page` is set, to itch.io.
-  # Will ignore warnings.
+  
+  # Whether to deploy the newest version of the app on every push to `main` to itch.io.
+  # Requires `itch_page` to be set. Builds will ignore warnings.
   # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
-  continuous_deployment_to_web: false
+  continuous_deployment_to_itch: false
+
+  # Whether to deploy the newest version of the app on every push to `main` to GitHub Pages.
+  # Requires GitHub Pages to be set up. Builds will ignore warnings.
+  # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
+  continuous_deployment_to_github_pages: false
   ```
 </details>
 

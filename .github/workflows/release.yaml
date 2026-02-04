@@ -92,11 +92,15 @@ env:
   # <https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage>
   git_lfs: false
 
-  # Whether to deploy the newest version of the app on every push to `main` to web targets.
-  # Will upload to GitHub pages and, if `itch_page` is set, to itch.io.
-  # Will ignore warnings.
+  # Whether to deploy the newest version of the app on every push to `main` to itch.io.
+  # Requires `itch_page` to be set. Builds will ignore warnings.
   # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
-  continuous_deployment_to_web: true
+  continuous_deployment_to_itch: true
+
+  # Whether to deploy the newest version of the app on every push to `main` to GitHub Pages.
+  # Requires GitHub Pages to be set up. Builds will ignore warnings.
+  # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
+  continuous_deployment_to_github_pages: false
 
 jobs:
   # Forward some environment variables as outputs of this job.
@@ -109,7 +113,8 @@ jobs:
         run: "true"
     outputs:
       itch_page: ${{ env.itch_page }}
-      continuous_deployment_to_web: ${{ env.continuous_deployment_to_web }}
+      continuous_deployment_to_itch: ${{ env.continuous_deployment_to_itch }}
+      continuous_deployment_to_github_pages: ${{ env.continuous_deployment_to_github_pages }}
 
   # Determine the version number for this workflow.
   get-version:
@@ -132,6 +137,7 @@ jobs:
   build:
     needs:
       - get-version
+      - forward-env
     env:
       version: ${{ needs.get-version.outputs.version }}
       # Avoid rate-limiting. See: <https://github.com/cargo-bins/cargo-binstall/issues/2045>.
@@ -207,7 +213,7 @@ jobs:
 
           # Check if building for this platform is enabled.
           echo 'is_platform_enabled=${{
-            (matrix.platform == 'web' && (inputs.build_for_web || (github.event_name == 'push' && env.continuous_deployment_to_web == 'true'))) ||
+            (matrix.platform == 'web' && (inputs.build_for_web || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
             (matrix.platform == 'linux' && inputs.build_for_linux) ||
             (matrix.platform == 'windows' && inputs.build_for_windows) ||
             (matrix.platform == 'macos' && inputs.build_for_macos)
@@ -226,7 +232,7 @@ jobs:
           targets: ${{ matrix.targets }}
 
       - name: Restore Rust cache
-        if: ${{ env.is_platform_enabled == 'true' && env.continuous_deployment_to_web == 'true' }}
+        if: ${{ env.is_platform_enabled == 'true' && (needs.forward-env.outputs.continuous_deployment_to_itch == 'true' || needs.forward-env.outputs.continuous_deployment_to_github_pages == 'true') }}
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: release
@@ -337,7 +343,7 @@ jobs:
           retention-days: 1
 
       - name: Upload web bundle to workflow artifacts for GitHub Pages (Web)
-        if: ${{ env.is_platform_enabled == 'true' && matrix.platform == 'web' && (inputs.deploy_to_github_pages == 'true || (github.event_name == 'push' && env.continuous_deployment_to_web == 'true')) }}
+        if: ${{ env.is_platform_enabled == 'true' && matrix.platform == 'web' && (inputs.deploy_to_github_pages == 'true' || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_github_pages== 'true')) }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ env.app }}/${{ env.cargo_build_binary_name }}
@@ -356,11 +362,8 @@ jobs:
   # Deploy to itch.io.
   deploy-to-itch:
     runs-on: ubuntu-latest
-    needs:
-      - forward-env
-      - get-version
-      - build
-    if: ${{ (inputs.deploy_to_itch || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_web == 'true')) && needs.forward-env.outputs.itch_page != '' }}
+    needs: build
+    if: ${{ (inputs.deploy_to_itch || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_itch == 'true')) && needs.forward-env.outputs.itch_page != '' }}
     steps:
       - name: Download packages
         uses: actions/download-artifact@v4
@@ -400,7 +403,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
-    if: ${{ (inputs.deploy_to_github_pages && inputs.build_for_web) || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_web == 'true') }}
+    if: ${{ (inputs.deploy_to_github_pages && inputs.build_for_web) || (github.event_name == 'push' && needs.forward-env.outputs.continuous_deployment_to_github_pages == 'true') }}
 
     steps:
       - name: Deploy to GitHub Pages
