@@ -102,7 +102,7 @@ env:
   # Whether to deploy the newest version of the app on every push to `main` to itch.io.
   # Requires `itch_page` to be set. Builds will ignore warnings.
   # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
-  continuous_deployment_to_itch: true
+  continuous_deployment_to_itch: false
 
   # Whether to deploy the newest version of the app on every push to `main` to GitHub Pages.
   # Requires GitHub Pages to be set up. Builds will ignore warnings.
