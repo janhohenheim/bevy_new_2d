@@ -136,8 +136,8 @@ jobs:
   # Build and package a release for each platform.
   build:
     needs:
-      - get-version
       - forward-env
+      - get-version
     env:
       version: ${{ needs.get-version.outputs.version }}
       # Avoid rate-limiting. See: <https://github.com/cargo-bins/cargo-binstall/issues/2045>.
