@@ -232,7 +232,7 @@ jobs:
           targets: ${{ matrix.targets }}
 
       - name: Restore Rust cache
-        if: ${{ env.is_platform_enabled == 'true' && (needs.forward-env.outputs.continuous_deployment_to_itch == 'true' || needs.forward-env.outputs.continuous_deployment_to_github_pages == 'true') }}
+        if: ${{ env.is_platform_enabled == 'true' && github.event_name == 'push' }}
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: release
