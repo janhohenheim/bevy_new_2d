@@ -32,7 +32,7 @@ The [CD workflow](../.github/workflows/release.yaml) will trigger on manual work
 - (Optional) Deploy to [itch.io](https://itch.io).
 - (Optional) Deploy to [GitHub Pages](https://docs.github.com/en/pages).
 
-If you have the `continuous_deployment_to_itch` env var enabled, it will also deploy the newest version of the app on every push to `main` to itch.io if the itch page is set up.
+If you enable `env.continuous_deployment_to_itch`, it will also deploy the newest version of the app to itch.io on every push to `main` (assuming the page is set up).
 
 <details>
   <summary><ins>Triggering a release</ins></summary>
