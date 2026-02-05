@@ -92,14 +92,10 @@ env:
   # <https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-storage-and-bandwidth-usage>
   git_lfs: false
 
-  # Whether to deploy the newest version of the app on every push to `main` to itch.io.
-  # Requires `itch_page` to be set. Builds will ignore warnings.
+  # Enable these to deploy on every push to `main`.
+  # Make sure to set up any enabled targets. Builds will ignore warnings.
   # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
   continuous_deployment_to_itch: true
-
-  # Whether to deploy the newest version of the app on every push to `main` to GitHub Pages.
-  # Requires GitHub Pages to be set up. Builds will ignore warnings.
-  # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
   continuous_deployment_to_github_pages: false
 
 jobs:
