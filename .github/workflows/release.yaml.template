@@ -135,6 +135,7 @@ jobs:
             echo "version=${{ inputs.version }}" >> "${GITHUB_OUTPUT}"
           else
             echo "version=$(cargo pkgid | sed 's/.*#//')" >> "${GITHUB_OUTPUT}"
+          fi
 
   # Build and package a release for each platform.
   build:
